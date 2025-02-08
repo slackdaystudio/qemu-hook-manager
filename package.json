@@ -1,6 +1,6 @@
 {
   "name": "@sentry0/qemu-hook-manager",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "description": "A simple QEMU hook manager.",
   "main": "dist/index.js",
   "scripts": {
