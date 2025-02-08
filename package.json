@@ -4,7 +4,7 @@
   "description": "A simple QEMU hook manager.",
   "main": "dist/index.js",
   "scripts": {
-    "qemu-hook-manager": "node --env-file=.env index.js",
+    "qemu-hook-manager": "node index.js",
     "test": "echo \"No tests specified\"",
     "lint": "npx eslint *.js",
     "check-format": "npx prettier --check \"*.js\"",
