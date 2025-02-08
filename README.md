@@ -5,10 +5,14 @@ QEMU Hook Manager is a CLI tool designed to easily manage hardware passthrough f
 ## Features
 
 - Manage pre-defined hooks for QEMU VMs
-- Automate tasks such as VM startup, shutdown, and snapshots
+- Automate tasks such as automatic hardware binding
 - Easy configuration and setup
 
 ## Installation
+
+Install with `npm i @sentry0/qemu-hook-manager`
+
+### Local Checkout
 
 To install QEMU Hook Manager, clone the repository and run the setup script:
 
@@ -23,6 +27,7 @@ npm install
 To use QEMU Hook Manager, follow these steps:
 
 1. Run `qemu-hook-manager` in your terminal
+    - You should be root in order to have proper acces rights to the hook directories
 2. Select your hardware to passthrough
 3. Select the VMs you want to pass the hardware through to
 

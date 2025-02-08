@@ -1,5 +1,5 @@
 {
-  "name": "qemu-hook-manager",
+  "name": "@sentry0/qemu-hook-manager",
   "version": "0.0.1-alpha",
   "description": "A simple QEMU hook manager.",
   "main": "dist/index.js",
@@ -43,7 +43,7 @@
     "*.js": "prettier --check --ignore-unknown"
   },
   "bin": {
-    "qemu-hook-manager": "./dist/index.js"
+    "qemu-hook-manager": "dist/index.js"
   },
   "files": [
     "dist",
@@ -63,5 +63,13 @@
     "manager"
   ],
   "author": "Slack Day Studio",
-  "license": "BSD 2-Clause"
+  "license": "BSD-2-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slackdaystudio/qemu-hook-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/slackdaystudio/qemu-hook-manager/issues"
+  },
+  "homepage": "https://github.com/slackdaystudio/qemu-hook-manager#readme"
 }
