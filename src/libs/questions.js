@@ -29,6 +29,7 @@ const buildQuestions = async () => {
         value: `0000:${d.substring(0, 7)}`,
         selected: false,
       })),
+      min: 1
     },
     {
       type: "multiselect",

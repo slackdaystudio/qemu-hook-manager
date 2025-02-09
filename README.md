@@ -15,7 +15,7 @@ For best results, make sure you have your virtualization CPU extensions enabled 
  - Node 20+
  - virsh
  - qemu
- - Complete the requisite hardware configuration as described in steps 1-3 [here]((https://github.com/slackdaystudio/qemu-gpu-passthrough)).
+ - Complete the requisite hardware configuration as described in steps 1-3 [here](https://github.com/slackdaystudio/qemu-gpu-passthrough).
 
 ## Installation
 
