@@ -19,14 +19,14 @@ For best results, make sure you have your virtualization CPU extensions enabled 
 
 ## Installation
 
-Install with `npm i @sentry0/qemu-hook-manager`
+Install with `npm i -g @sentry0/qemu-hook-manager`.
 
 ### Local Checkout
 
 To install QEMU Hook Manager, clone the repository and run the setup script:
 
 ```bash
-git clone https://github.com/yourusername/qemu-hook-manager.git
+git clone https://github.com/sentry0/qemu-hook-manager.git
 cd qemu-hook-manager
 npm install
 npm run qemu-hook-manager

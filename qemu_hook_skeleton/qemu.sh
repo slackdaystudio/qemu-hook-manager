@@ -9,8 +9,6 @@
 # For a list of available hooks, please refer to https://www.libvirt.org/hooks.html
 #
 
-# My Comment.
-
 GUEST_NAME="$1"
 HOOK_NAME="$2"
 STATE_NAME="$3"
