@@ -16,7 +16,7 @@ import { dirExists, ls } from "./general.js";
 export const QEMU_HOOK_DIR = "/etc/libvirt/hooks";
 
 // The root directory for our hooks on the host system
-export const HOOKS_ROOT = join(QEMU_HOOK_DIR, "qemu.d", ".gpu-passthrough");
+export const HOOKS_ROOT = join(QEMU_HOOK_DIR, "qemu.d", ".qhm-passthrough");
 
 /**
  * Cleans up the hooks directory by removing any hooks found matching hooks 

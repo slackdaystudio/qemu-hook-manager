@@ -26,7 +26,7 @@ const buildQuestions = async () => {
       message: "Select the hardware to toggle passthrough for",
       choices: iommuGroups.map((d) => ({
         title: d,
-        value: `0000:${d.substring(0, 7)}`,
+        value: d.substring(0, 7),
         selected: false,
       })),
       min: 1

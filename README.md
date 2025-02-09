@@ -43,19 +43,66 @@ To use QEMU Hook Manager, follow these steps:
 3. Select the VMs you want to pass the hardware through to
 ![Pick VMs](https://github.com/slackdaystudio/qemu-hook-manager/blob/69a292a160eff09469fd7d9bbe1ecb71b629d991/pick-vms.png?raw=true)
 
+### CLI Switches
+
+You may bypass parts of or the entire guided experience qemu-hook-manager 
+provides by invoking it with appropriate CLI switches.
+
+| Switch         | Type    |     Examples/Notes                            |
+|----------------|---------|-----------------------------------------------|
+| iommuGroups    | string  | "00:00:0"                                     |
+| domains        | string  | "VM1"                                         |
+
+Both switches may be specified multiple times in a single command to specify 
+more than one VM or piece of hardware.
+
+For example, if you ran following command you would skip the guided experience.
+```
+qemu-hook-manager --iommuGroups=07:00.0 --iommuGroups=07:00.1 --domains=My-Awesome-VM --domains=My-Other-Awesome-VM
+```
+
+Assuming that all supplied paramaters are valid then the resulting hook 
+structure in `/etc/libvirt/hooks` would look like this.
+
+```
+/etc/libvirt/hooks/
+├── qemu
+└── qemu.d
+    ├── My-Awesome-VM -> /etc/libvirt/hooks/qemu.d/.qhm-passthrough
+    │   ├── prepare
+    │   │   └── begin
+    │   │       ├── qhm_bind_vfio_00000700.0.sh
+    │   │       └── qhm_bind_vfio_00000700.1.sh
+    │   └── release
+    │       └── end
+    │           ├── qhm_unbind_vfio_00000700.0.sh
+    │           └── qhm_unbind_vfio_00000700.1.sh
+    ├── My-Other-Awesome-VM -> /etc/libvirt/hooks/qemu.d/.qhm-passthrough  [recursive, not followed]
+    └── .qhm-passthrough
+        ├── prepare
+        │   └── begin
+        │       ├── qhm_bind_vfio_00000700.0.sh
+        │       └── qhm_bind_vfio_00000700.1.sh
+        └── release
+            └── end
+                ├── qhm_unbind_vfio_00000700.0.sh
+                └── qhm_unbind_vfio_00000700.1.sh
+```
+
 ## Custom Hooks
 Adding a custom hook consists of picking the correct hook name and state name 
 and having a script.  Add your hook and state folders into the 
-`qemu_hook_skeleton` directory and drop your script into the state folder.
+`qemu_hook_skeleton/hooks` directory and drop your script into your state 
+folder.
 
-More than one script may be added per state.
+>**Note:** More than one script may be added per state.
 
-When qemu-hook-manager installs the the hooks it will look for `hooks` under
-the `qemu_hook_skeleton` directory.  Any directory file structure found will be
-copied to `/etc/libvirt/hooks` on the host.
+When qemu-hook-manager is ran, it will unpack any directory structure it finds 
+in the `qemu_hook_skeleton/hooks` directory on the host.  The host directory 
+structure may be found in `/etc/libvirt/hooks/qemu.d` on the host.
 
 All scripts installed onto the host system go through a environment variable 
-substiution program that replace any occurrences of the variable 
+substiution program that replaces any occurrences of the variable 
 `IOMMU_GROUP_ID` with the IOMMU group of the hardware being passed through.
 
 
@@ -72,8 +119,6 @@ migrate|begin
 restore|begin
 reconnect|begin
 attach|begin
-
-For example, if you wanted to perform 
 
 Further reading at https://www.libvirt.org/hooks.html#etc-libvirt-hooks-qemu
 

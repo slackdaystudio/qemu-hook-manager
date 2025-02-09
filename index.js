@@ -1,15 +1,18 @@
 #!/usr/bin/env node
-import { exit } from "node:process";
+import { argv, exit } from "node:process";
 import { join, sep } from "node:path";
 import { exec } from "node:child_process";
 import util from "node:util";
+import { readdir } from "node:fs/promises";
 import prompts from "prompts";
+import Yargs from "yargs/yargs";
 import { logger } from "./src/libs/logger.js";
 import {
   enablePassthrough,
   disablePassthrough,
   fetchActiveDomains,
   installScript,
+  filterAnswers,
 } from "./src/libs/general.js";
 import { buildQuestions } from "./src/libs/questions.js";
 import {
@@ -19,7 +22,6 @@ import {
   makeHookDirectories,
   HOOKS_ROOT,
 } from "./src/libs/hooks.js";
-import { readdir } from "node:fs/promises";
 
 /**
  * App entrypoint/main event loop.
@@ -34,6 +36,8 @@ export const SKELETON_DIR = join(import.meta.dirname, "qemu_hook_skeleton");
 try {
   const activeDomains = await fetchActiveDomains();
 
+  prompts.override(Yargs(argv.slice(2)).argv);
+
   const answers = await prompts(await buildQuestions(), {
     onCancel: () => {
       logger.info("User cancelled the installation");
@@ -42,9 +46,13 @@ try {
     },
   });
 
-  const conf = {
-    iommuGroups: answers.iommuGroups,
-  };
+  const filteredAnswers = await filterAnswers(answers);
+
+  if (filteredAnswers.iommuGroups.length <= 0) {
+    logger.info("No valid IOMMU groups specified, exiting");
+
+    exit(2);
+  }
 
   logger.info("Installing the script 'qemu' which calls our hooks");
 
@@ -54,15 +62,9 @@ try {
 
   await cleanHooks();
 
-  if (!conf.iommuGroups) {
-    logger.info("No IOMMU groups selected, skipping installation of hooks");
-
-    exit(0);
-  }
-
   logger.info("Installing hooks");
 
-  for (const iommuGroup of conf.iommuGroups) {
+  for (const iommuGroup of filteredAnswers.iommuGroups) {
     const hooksRootDir = join(SKELETON_DIR, "hooks");
 
     for (const dir of await readdir(hooksRootDir, { recursive: true })) {
@@ -72,20 +74,20 @@ try {
 
         await makeHookDirectories(join(HOOKS_ROOT, ...dirPaths));
 
-        await installHook(iommuGroup, dirPaths.join(sep), hook);
+        await installHook(`0000${iommuGroup}`, dirPaths.join(sep), hook);
       }
     }
   }
 
   for (const activeDomain of activeDomains) {
-    if (!answers.domains.includes(activeDomain)) {
+    if (!filteredAnswers.domains.includes(activeDomain)) {
       logger.info(`Disabling hardware passthrough for domain: ${activeDomain}`);
 
       await disablePassthrough(activeDomain);
     }
   }
 
-  for (const domain of answers.domains) {
+  for (const domain of filteredAnswers.domains) {
     if (!activeDomains.includes(domain)) {
       logger.info(`Enabling hardware passthrough for domain: ${domain}`);
 

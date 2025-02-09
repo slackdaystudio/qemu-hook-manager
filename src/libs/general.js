@@ -5,6 +5,7 @@ import { rm, copyFile, chown, chmod, opendir, access } from "node:fs/promises";
 import { asyncExec, SKELETON_DIR } from "../../index.js";
 import { logger } from "./logger.js";
 import { QEMU_HOOK_DIR } from "./hooks.js";
+import { domainExists } from "./virsh.js";
 
 /**
  * Returns a list of IOMMU groups.
@@ -68,7 +69,7 @@ const enablePassthrough = async (domain) => {
   const command = [
     "ln",
     "-s",
-    join(QEMU_HOOK_DIR, "qemu.d", ".gpu-passthrough"),
+    join(QEMU_HOOK_DIR, "qemu.d", ".qhm-passthrough"),
     join(QEMU_HOOK_DIR, "qemu.d", domain),
   ];
 
@@ -180,6 +181,42 @@ const ls = async (path) => {
   }
 };
 
+/**
+ * Filters the incoming answers to remove any invalid or non-existent IOMMU 
+ * groups or domains.
+ * 
+ * @param {object} answers the user supplied answers to filter
+ * @returns a filtered version of the incoming answers
+ */
+const filterAnswers = async (answers) => {
+  const filteredAnswers = {
+    iommuGroups: [],
+    domains: [],
+  }
+
+  for (const [k, v] of Object.entries(answers)) {
+    if (k === "iommuGroups") {
+      for (const group of v) {
+        if (/^[\da-f]{2}:[\da-f]{2}\.[\da-f]$/.test(group)) {
+          filteredAnswers.iommuGroups.push(group);
+        } else {
+          logger.warn(`Invalid IOMMU group: ${group}`);
+        }
+      }
+    } else if (k === "domains") {
+      for (const domain of v) {
+        if (await domainExists(domain)) {
+          filteredAnswers.domains.push(domain);
+        } else {
+          logger.warn(`Domain ${domain} does not exist`);
+        }
+      }
+    }
+  }
+
+  return filteredAnswers;
+}
+
 export {
   fetchIommuGroups,
   fetchActiveDomains,
@@ -189,4 +226,5 @@ export {
   fileExists,
   dirExists,
   ls,
+  filterAnswers,
 };
