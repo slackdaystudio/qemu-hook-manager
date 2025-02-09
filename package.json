@@ -1,6 +1,6 @@
 {
   "name": "@sentry0/qemu-hook-manager",
-  "version": "0.0.3-alpha",
+  "version": "0.0.4-alpha",
   "description": "A simple QEMU hook manager.",
   "main": "dist/index.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "lint": "npx eslint *.js",
     "check-format": "npx prettier --check \"*.js\"",
     "format": "npx prettier --write \"*.js\"",
-    "watch": "rimraf dist && esbuild ./qemu_hook_skeleton/**/**/**/* --loader:.sh=copy --minify --platform=node --outdir=dist index.js src/libs/*.js --watch",
-    "build": "rimraf dist && esbuild ./qemu_hook_skeleton/**/**/**/* --loader:.sh=copy --minify --platform=node --outdir=dist index.js src/libs/*.js",
+    "watch": "rimraf dist && esbuild ./qemu_hook_skeleton/qemu.sh ./qemu_hook_skeleton/**/**/**/* --loader:.sh=copy --minify --platform=node --outdir=dist index.js src/libs/*.js --watch",
+    "build": "rimraf dist && esbuild ./qemu_hook_skeleton/* ./qemu_hook_skeleton/**/**/**/* --loader:.sh=copy --minify --platform=node --outdir=dist index.js src/libs/*.js",
     "prepare": "husky"
   },
   "dependencies": {

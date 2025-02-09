@@ -43,6 +43,40 @@ To use QEMU Hook Manager, follow these steps:
 3. Select the VMs you want to pass the hardware through to
 ![Pick VMs](https://github.com/slackdaystudio/qemu-hook-manager/blob/69a292a160eff09469fd7d9bbe1ecb71b629d991/pick-vms.png?raw=true)
 
+## Custom Hooks
+Adding a custom hook consists of picking the correct hook name and state name 
+and having a script.  Add your hook and state folders into the 
+`qemu_hook_skeleton` directory and drop your script into the state folder.
+
+More than one script may be added per state.
+
+When qemu-hook-manager installs the the hooks it will look for `hooks` under
+the `qemu_hook_skeleton` directory.  Any directory file structure found will be
+copied to `/etc/libvirt/hooks` on the host.
+
+All scripts installed onto the host system go through a environment variable 
+substiution program that replace any occurrences of the variable 
+`IOMMU_GROUP_ID` with the IOMMU group of the hardware being passed through.
+
+
+Available hook names and states include:
+
+**Hook**|**State**
+:-----:|:-----:
+prepare|begin
+start|begin
+started|begin
+stopped|end
+release|end
+migrate|begin
+restore|begin
+reconnect|begin
+attach|begin
+
+For example, if you wanted to perform 
+
+Further reading at https://www.libvirt.org/hooks.html#etc-libvirt-hooks-qemu
+
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit a pull request with your changes.

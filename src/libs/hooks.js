@@ -1,5 +1,5 @@
-import { mkdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readdir, rm } from "node:fs/promises";
+import { join, sep } from "node:path";
 import { copyFile, chown, chmod } from "node:fs/promises";
 import envsub from "envsub";
 import sanitize from "sanitize-filename";
@@ -18,43 +18,39 @@ export const QEMU_HOOK_DIR = "/etc/libvirt/hooks";
 // The root directory for our hooks on the host system
 export const HOOKS_ROOT = join(QEMU_HOOK_DIR, "qemu.d", ".gpu-passthrough");
 
-// The path to the prepare hook on the host system
-export const PREPARE_HOOK_PATH = join(HOOKS_ROOT, "prepare", "begin");
-
-// The path to the release hook on the host system
-export const RELEASE_HOOK_PATH = join(HOOKS_ROOT, "release", "end");
-
 /**
- * Cleans up the hooks directory by removing any hooks found in the prepare and 
- * release directories and recreating the begin and end directories.
+ * Cleans up the hooks directory by removing any hooks found matching hooks 
+ * directories and removing any scripts prefixed with "qhm_".
  */
 const cleanHooks = async () => {
-  await makeHookDirectories(PREPARE_HOOK_PATH);
+  const hooksRootDir = join(SKELETON_DIR, "hooks");
 
-  await makeHookDirectories(RELEASE_HOOK_PATH);
+  for (const dir of await readdir(hooksRootDir, { recursive: true })) {
+    if (dir.endsWith(".sh")) {
+      const dirPaths = dir.split(sep).slice(-1);
 
-  await cleanOwnedHooks(PREPARE_HOOK_PATH);
-
-  await cleanOwnedHooks(RELEASE_HOOK_PATH);
+      await cleanOwnedHooks(join(HOOKS_ROOT, ...dirPaths));
+    }
+  }
 };
 
 /**
  * Creates the hook directories if they don't exist.
- * 
+ *
  * @param {PathLike} hookPath the hook path to create
  */
 const makeHookDirectories = async (hookPath) => {
   if (!(await dirExists(hookPath))) {
     await mkdir(join(hookPath), {
       recursive: true,
-    });  
+    });
   }
 };
 
 /**
  * Cleans up hooks that are owned by the app for a given hook path.  Only cleans
  * hooks that start with "qhm_".
- * 
+ *
  * @param {PathLike} hooksPath the path to the hooks to clean up
  */
 const cleanOwnedHooks = async (hooksPath) => {
@@ -67,11 +63,11 @@ const cleanOwnedHooks = async (hooksPath) => {
       }
     }
   }
-}
+};
 
 /**
  * Installs a hook to the host system.
- * 
+ *
  * @param {string} iommuGroup the IOMMU group the hook is for
  * @param {string} hookName the name of the hook
  * @param {string} fileName the name of the file to install from the qemu_hook_skeleton directory
@@ -86,7 +82,11 @@ const installHook = async (iommuGroup, hookName, fileName) => {
     ],
   };
 
-  const hookTemplatePath = join(SKELETON_DIR, fileName);
+  const hookTemplatePath = join(
+    SKELETON_DIR,
+    join("hooks", hookName),
+    fileName
+  );
 
   const hookPath = join(
     HOOKS_ROOT,
@@ -107,4 +107,4 @@ const installHook = async (iommuGroup, hookName, fileName) => {
   });
 };
 
-export { cleanHooks, installHook };
+export { cleanHooks, installHook, makeHookDirectories };

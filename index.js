@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { exit } from "node:process";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { exec } from "node:child_process";
 import util from "node:util";
 import prompts from "prompts";
@@ -12,7 +12,14 @@ import {
   installScript,
 } from "./src/libs/general.js";
 import { buildQuestions } from "./src/libs/questions.js";
-import { installHook, cleanHooks, QEMU_HOOK_DIR } from "./src/libs/hooks.js";
+import {
+  installHook,
+  cleanHooks,
+  QEMU_HOOK_DIR,
+  makeHookDirectories,
+  HOOKS_ROOT,
+} from "./src/libs/hooks.js";
+import { readdir } from "node:fs/promises";
 
 /**
  * App entrypoint/main event loop.
@@ -56,17 +63,18 @@ try {
   logger.info("Installing hooks");
 
   for (const iommuGroup of conf.iommuGroups) {
-    await installHook(
-      iommuGroup,
-      join("prepare", "begin"),
-      "qhm_bind_vfio_device.sh",
-    );
+    const hooksRootDir = join(SKELETON_DIR, "hooks");
 
-    await installHook(
-      iommuGroup,
-      join("release", "end"),
-      "qhm_unbind_vfio_device.sh",
-    );
+    for (const dir of await readdir(hooksRootDir, { recursive: true })) {
+      if (dir.endsWith(".sh")) {
+        const dirPaths = dir.split(sep);
+        const hook = dirPaths.pop();
+
+        await makeHookDirectories(join(HOOKS_ROOT, ...dirPaths));
+
+        await installHook(iommuGroup, dirPaths.join(sep), hook);
+      }
+    }
   }
 
   for (const activeDomain of activeDomains) {
