@@ -43,7 +43,7 @@ try {
 
   await installScript("qemu.sh", QEMU_HOOK_DIR, "qemu");
 
-  logger.info("Cleaning up existing hooks");
+  logger.info("Cleaning up any existing hooks");
 
   await cleanHooks();
 
@@ -59,13 +59,13 @@ try {
     await installHook(
       iommuGroup,
       join("prepare", "begin"),
-      "bind_vfio_device.sh",
+      "qhm_bind_vfio_device.sh",
     );
 
     await installHook(
       iommuGroup,
       join("release", "end"),
-      "unbind_vfio_device.sh",
+      "qhm_unbind_vfio_device.sh",
     );
   }
 
@@ -85,7 +85,7 @@ try {
     }
   }
 
-  logger.info("Successfully installed qemu-hook-manager");
+  logger.info("qemu-hook-manager has completed.");
 } catch (error) {
   logger.error(error.message);
 

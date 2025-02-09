@@ -4,6 +4,7 @@ import { copyFile, chown, chmod } from "node:fs/promises";
 import envsub from "envsub";
 import sanitize from "sanitize-filename";
 import { SKELETON_DIR } from "../../index.js";
+import { dirExists, ls } from "./general.js";
 
 /**
  * Functions for interacting with our hooks.
@@ -18,34 +19,55 @@ export const QEMU_HOOK_DIR = "/etc/libvirt/hooks";
 export const HOOKS_ROOT = join(QEMU_HOOK_DIR, "qemu.d", ".gpu-passthrough");
 
 // The path to the prepare hook on the host system
-export const PREPARE_HOOK_PATH = join(HOOKS_ROOT, "prepare");
+export const PREPARE_HOOK_PATH = join(HOOKS_ROOT, "prepare", "begin");
 
 // The path to the release hook on the host system
-export const RELEASE_HOOK_PATH = join(HOOKS_ROOT, "release");
+export const RELEASE_HOOK_PATH = join(HOOKS_ROOT, "release", "end");
 
 /**
  * Cleans up the hooks directory by removing any hooks found in the prepare and 
  * release directories and recreating the begin and end directories.
  */
 const cleanHooks = async () => {
-  await rm(PREPARE_HOOK_PATH, {
-    force: true,
-    recursive: true,
-  });
+  await makeHookDirectories(PREPARE_HOOK_PATH);
 
-  await rm(RELEASE_HOOK_PATH, {
-    force: true,
-    recursive: true,
-  });
+  await makeHookDirectories(RELEASE_HOOK_PATH);
 
-  await mkdir(join(PREPARE_HOOK_PATH, "begin"), {
-    recursive: true,
-  });
+  await cleanOwnedHooks(PREPARE_HOOK_PATH);
 
-  await mkdir(join(RELEASE_HOOK_PATH, "end"), {
-    recursive: true,
-  });
+  await cleanOwnedHooks(RELEASE_HOOK_PATH);
 };
+
+/**
+ * Creates the hook directories if they don't exist.
+ * 
+ * @param {PathLike} hookPath the hook path to create
+ */
+const makeHookDirectories = async (hookPath) => {
+  if (!(await dirExists(hookPath))) {
+    await mkdir(join(hookPath), {
+      recursive: true,
+    });  
+  }
+};
+
+/**
+ * Cleans up hooks that are owned by the app for a given hook path.  Only cleans
+ * hooks that start with "qhm_".
+ * 
+ * @param {PathLike} hooksPath the path to the hooks to clean up
+ */
+const cleanOwnedHooks = async (hooksPath) => {
+  const releaseHooks = await ls(hooksPath);
+
+  if (Array.isArray(releaseHooks)) {
+    for (const file of releaseHooks) {
+      if (file && file.name.startsWith("qhm_")) {
+        await rm(join(file.path, file.name));
+      }
+    }
+  }
+}
 
 /**
  * Installs a hook to the host system.
@@ -55,9 +77,7 @@ const cleanHooks = async () => {
  * @param {string} fileName the name of the file to install from the qemu_hook_skeleton directory
  */
 const installHook = async (iommuGroup, hookName, fileName) => {
-  let hookPath, hookTemplatePath, envSubOpts;
-
-  envSubOpts = {
+  const envSubOpts = {
     envs: [
       {
         name: "IOMMU_GROUP_ID",
@@ -66,9 +86,9 @@ const installHook = async (iommuGroup, hookName, fileName) => {
     ],
   };
 
-  hookTemplatePath = join(SKELETON_DIR, fileName);
+  const hookTemplatePath = join(SKELETON_DIR, fileName);
 
-  hookPath = join(
+  const hookPath = join(
     HOOKS_ROOT,
     hookName,
     fileName.replace("device", sanitize(iommuGroup))
