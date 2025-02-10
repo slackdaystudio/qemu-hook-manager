@@ -1,9 +1,9 @@
+import { env } from "node:process";
 import { mkdir, readdir, rm } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { copyFile, chown, chmod } from "node:fs/promises";
 import envsub from "envsub";
 import sanitize from "sanitize-filename";
-import { SKELETON_DIR } from "../../index.js";
 import { dirExists, ls } from "./general.js";
 
 /**
@@ -19,13 +19,11 @@ export const QEMU_HOOK_DIR = "/etc/libvirt/hooks";
 export const HOOKS_ROOT = join(QEMU_HOOK_DIR, "qemu.d", ".qhm-passthrough");
 
 /**
- * Cleans up the hooks directory by removing any hooks found matching hooks 
+ * Cleans up the hooks directory by removing any hooks found matching hooks
  * directories and removing any scripts prefixed with "qhm_".
  */
 const cleanHooks = async () => {
-  const hooksRootDir = join(SKELETON_DIR, "hooks");
-
-  for (const dir of await readdir(hooksRootDir, { recursive: true })) {
+  for (const dir of await readdir(env.QHM_HOOKS_DIR, { recursive: true })) {
     if (dir.endsWith(".sh")) {
       const dirPaths = dir.split(sep).slice(-1);
 
@@ -41,7 +39,7 @@ const cleanHooks = async () => {
  */
 const makeHookDirectories = async (hookPath) => {
   if (!(await dirExists(hookPath))) {
-    await mkdir(join(hookPath), {
+    await mkdir(hookPath, {
       recursive: true,
     });
   }
@@ -72,7 +70,12 @@ const cleanOwnedHooks = async (hooksPath) => {
  * @param {string} hookName the name of the hook
  * @param {string} fileName the name of the file to install from the qemu_hook_skeleton directory
  */
-const installHook = async (iommuGroup, hookName, fileName) => {
+const installHook = async (
+  iommuGroup,
+  hookName,
+  fileName,
+  useOwnHooks
+) => {
   const envSubOpts = {
     envs: [
       {
@@ -82,11 +85,9 @@ const installHook = async (iommuGroup, hookName, fileName) => {
     ],
   };
 
-  const hookTemplatePath = join(
-    SKELETON_DIR,
-    join("hooks", hookName),
-    fileName
-  );
+  const hookTemplatePath = useOwnHooks
+    ? join(env.QHM_HOOKS_DIR, hookName, fileName)
+    : join(env.QHM_HOOKS_DIR, "hooks", hookName, fileName);
 
   const hookPath = join(
     HOOKS_ROOT,

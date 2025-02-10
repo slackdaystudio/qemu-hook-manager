@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { argv, exit } from "node:process";
+import { argv, env, exit } from "node:process";
 import { join, sep } from "node:path";
 import { exec } from "node:child_process";
 import util from "node:util";
@@ -13,6 +13,7 @@ import {
   fetchActiveDomains,
   installScript,
   filterAnswers,
+  dirExists,
 } from "./src/libs/general.js";
 import { buildQuestions } from "./src/libs/questions.js";
 import {
@@ -20,7 +21,6 @@ import {
   cleanHooks,
   QEMU_HOOK_DIR,
   makeHookDirectories,
-  HOOKS_ROOT,
 } from "./src/libs/hooks.js";
 
 /**
@@ -31,7 +31,10 @@ import {
 
 export const asyncExec = util.promisify(exec);
 
-export const SKELETON_DIR = join(import.meta.dirname, "qemu_hook_skeleton");
+export const DEFAULT_HOOKS_DIR = join(
+  import.meta.dirname,
+  "qemu_hook_skeleton",
+);
 
 try {
   const activeDomains = await fetchActiveDomains();
@@ -48,33 +51,60 @@ try {
 
   const filteredAnswers = await filterAnswers(answers);
 
+  if (filteredAnswers.useOwnHooks) {
+    if (!(await dirExists(filteredAnswers.hooksDir))) {
+      logger.error(
+        `Hooks directory ${filteredAnswers.hooksDir} does not exist`,
+      );
+
+      exit(3);
+    }
+
+    env.QHM_HOOKS_DIR = filteredAnswers.hooksDir;
+  } else {
+    env.QHM_HOOKS_DIR = DEFAULT_HOOKS_DIR;
+  }
+
   if (filteredAnswers.iommuGroups.length <= 0) {
     logger.info("No valid IOMMU groups specified, exiting");
 
     exit(2);
   }
 
-  logger.info("Installing the script 'qemu' which calls our hooks");
-
-  await installScript("qemu.sh", QEMU_HOOK_DIR, "qemu");
-
   logger.info("Cleaning up any existing hooks");
 
   await cleanHooks();
 
+  logger.info("Installing the script 'qemu' which calls our hooks");
+
+  await installScript(
+    join(DEFAULT_HOOKS_DIR, "qemu.sh"),
+    QEMU_HOOK_DIR,
+    "qemu",
+  );
+
   logger.info("Installing hooks");
 
   for (const iommuGroup of filteredAnswers.iommuGroups) {
-    const hooksRootDir = join(SKELETON_DIR, "hooks");
+    const hooksRootDir = filteredAnswers.useOwnHooks
+      ? env.QHM_HOOKS_DIR
+      : join(env.QHM_HOOKS_DIR, "hooks");
 
     for (const dir of await readdir(hooksRootDir, { recursive: true })) {
       if (dir.endsWith(".sh")) {
         const dirPaths = dir.split(sep);
         const hook = dirPaths.pop();
 
-        await makeHookDirectories(join(HOOKS_ROOT, ...dirPaths));
+        await makeHookDirectories(
+          join(QEMU_HOOK_DIR, "qemu.d", ".qhm-passthrough", ...dirPaths),
+        );
 
-        await installHook(`0000${iommuGroup}`, dirPaths.join(sep), hook);
+        await installHook(
+          `0000${iommuGroup}`,
+          dirPaths.join(sep),
+          hook,
+          filteredAnswers.useOwnHooks,
+        );
       }
     }
   }

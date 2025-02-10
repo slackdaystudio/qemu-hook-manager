@@ -1,8 +1,8 @@
 import { EOL } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { open } from "node:fs";
 import { rm, copyFile, chown, chmod, opendir, access } from "node:fs/promises";
-import { asyncExec, SKELETON_DIR } from "../../index.js";
+import { asyncExec } from "../../index.js";
 import { logger } from "./logger.js";
 import { QEMU_HOOK_DIR } from "./hooks.js";
 import { domainExists } from "./virsh.js";
@@ -109,11 +109,11 @@ const disablePassthrough = async (domain) => {
  * @param {PathLike} destinationScriptName the name of the script when installed to the destination directory
  */
 const installScript = async (
-  scriptName,
+  source,
   destination,
   destinationScriptName = undefined
 ) => {
-  destinationScriptName = destinationScriptName || scriptName;
+  destinationScriptName = destinationScriptName || source.split(sep).pop();
 
   const destinationPath = join(destination, destinationScriptName);
 
@@ -126,7 +126,7 @@ const installScript = async (
     });
   }
 
-  await copyFile(join(SKELETON_DIR, scriptName), destinationPath);
+  await copyFile(source, destinationPath);
 
   await chown(destinationPath, 0, 0);
 
@@ -140,13 +140,18 @@ const installScript = async (
  * @param {PathLike} path the pathe to check for existence
  */
 const fileExists = async (path) => {
-  open(path, "r", (error) => {
-    if (error) {
-      return false;
-    } else {
-      return true;
-    }
-  });
+  try {
+    open(path, "r", (error) => {
+      if (error) {
+        logger.debug(`Error opening file: ${path}`);
+      }
+    });
+
+    return true;
+  // eslint-disable-next-line no-unused-vars
+  } catch (error) {
+    return false;
+  }
 };
 
 /**
@@ -196,7 +201,9 @@ const filterAnswers = async (answers) => {
 
   for (const [k, v] of Object.entries(answers)) {
     if (k === "iommuGroups") {
-      for (const group of v) {
+      const iommuGroups = Array.isArray(v) ? v : [v];
+
+      for (const group of iommuGroups) {
         if (/^[\da-f]{2}:[\da-f]{2}\.[\da-f]$/.test(group)) {
           filteredAnswers.iommuGroups.push(group);
         } else {
@@ -204,13 +211,19 @@ const filterAnswers = async (answers) => {
         }
       }
     } else if (k === "domains") {
-      for (const domain of v) {
+      const domains = Array.isArray(v) ? v : [v];
+
+      for (const domain of domains) {
         if (await domainExists(domain)) {
           filteredAnswers.domains.push(domain);
         } else {
           logger.warn(`Domain ${domain} does not exist`);
         }
       }
+    } else if (k === "useOwnHooks") {
+      filteredAnswers[k] = v === "yes";
+    } else {
+      filteredAnswers[k] = v;
     }
   }
 

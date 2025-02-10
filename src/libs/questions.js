@@ -21,6 +21,19 @@ const buildQuestions = async () => {
 
   return [
     {
+      type: 'toggle',
+      name: 'useOwnHooks',
+      message: 'Will you use your own hooks?',
+      initial: false,
+      active: 'yes',
+      inactive: 'no'
+    },
+    {
+      type: prev => prev ? 'text' : null,
+      name: 'hooksDir',
+      message: 'Enter the path to your hooks',
+    },
+    {
       type: "multiselect",
       name: "iommuGroups",
       message: "Select the hardware to toggle passthrough for",
