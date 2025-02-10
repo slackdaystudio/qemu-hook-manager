@@ -55,8 +55,7 @@ provides by invoking it with appropriate CLI switches.
 | useOwnHooks    | string  | "yes" or "no"                                 |
 | hooksDir       | string  | "/home/me/hooks" (use an absolute path)      |
 
-Both switches may be specified multiple times in a single command to specify
-more than one VM or piece of hardware.
+The `iommuGroups` and `domains` switches may be specified multiple times in a single command to specify more than one VM or piece of hardware.
 
 For example, if you run the following command, you will skip the guided experience.
 ```
