@@ -18,7 +18,6 @@ import {
 import { buildQuestions } from "./src/libs/questions.js";
 import {
   installHook,
-  cleanHooks,
   QEMU_HOOK_DIR,
   makeHookDirectories,
 } from "./src/libs/hooks.js";
@@ -71,9 +70,9 @@ try {
     exit(2);
   }
 
-  logger.info("Cleaning up any existing hooks");
-
-  await cleanHooks();
+  // Leave this one in the hands of users for now
+  // logger.info("Cleaning up any existing hooks");
+  // await cleanHooks();
 
   logger.info("Installing the script 'qemu' which calls our hooks");
 
@@ -100,7 +99,7 @@ try {
         );
 
         await installHook(
-          `0000${iommuGroup}`,
+          `0000:${iommuGroup}`,
           dirPaths.join(sep),
           hook,
           filteredAnswers.useOwnHooks,
