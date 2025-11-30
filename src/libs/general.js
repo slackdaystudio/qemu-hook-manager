@@ -1,6 +1,5 @@
 import { EOL } from "node:os";
 import { join, sep } from "node:path";
-import { open } from "node:fs";
 import { rm, copyFile, chown, chmod, opendir, access } from "node:fs/promises";
 import { asyncExec } from "../../index.js";
 import { logger } from "./logger.js";
@@ -142,19 +141,14 @@ const installScript = async (
 };
 
 /**
- * Checks the filesystem for a the existence of a file by reading from it to get
- * around race conditions.
+ * Checks the filesystem for the existence of a file.
  *
- * @param {PathLike} path the pathe to check for existence
+ * @param {PathLike} path the path to check for existence
+ * @returns {Promise<boolean>} true if the file exists, false otherwise
  */
 const fileExists = async (path) => {
   try {
-    open(path, "r", (error) => {
-      if (error) {
-        logger.debug(`Error opening file: ${path}`);
-      }
-    });
-
+    await access(path);
     return true;
   // eslint-disable-next-line no-unused-vars
   } catch (error) {

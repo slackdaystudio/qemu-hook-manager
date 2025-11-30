@@ -1,5 +1,6 @@
 import { EOL } from "os";
 import { asyncExec } from "../../index.js";
+import { logger } from "./logger.js";
 
 /**
  * The virsh command functions.
