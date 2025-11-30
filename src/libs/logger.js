@@ -1,7 +1,6 @@
-import { platform, argv } from 'node:process';
+import { argv } from 'node:process';
 import * as winston from 'winston';
 import { consoleFormat } from 'winston-console-format';
-import { Syslog } from 'winston-syslog';
 import Yargs from 'yargs/yargs';
 
 /**
@@ -58,12 +57,6 @@ export const logger = winston.createLogger({
       levels: winston.config.cli.levels,
       silent: false,
       format: winston.format.combine(...consoleFormatOptions),
-    }),
-    new Syslog({
-        protocol: 'unix',
-        path: platform === 'darwin' ? '/var/run/syslog' : '/dev/log',
-        app_name: 'qemu-hook-manager',
-        format: winston.format.printf((info) => `${info.message}`)
     }),
   ],
 });

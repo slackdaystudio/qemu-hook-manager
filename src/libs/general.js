@@ -8,37 +8,45 @@ import { QEMU_HOOK_DIR } from "./hooks.js";
 import { domainExists } from "./virsh.js";
 
 /**
- * Returns a list of IOMMU groups.
+ * Returns a list of IOMMU groups with their devices.
  *
- * @returns a list of IOMMU groups, one record per line, sorted by group number
+ * @returns {Promise<Map<number, Array<{pciAddress: string, description: string}>>>}
+ *          Map of IOMMU group number to array of devices in that group
  */
 const fetchIommuGroups = async () => {
-  const command = [
-    "find",
-    "/sys/kernel/iommu_groups/",
-    "-type l",
-    "-exec",
-    "basename",
-    "{}",
-    "\\;",
-    "|",
-    "sort",
-    "|",
-    "xargs",
-    "-I",
-    "%",
-    "lspci",
-    "-nns",
-    "%",
-  ];
+  // Get all device symlinks with their full paths to preserve group numbers
+  const findCommand = "find /sys/kernel/iommu_groups/*/devices/* -maxdepth 0 2>/dev/null | sort -t/ -k5 -n";
 
-  const { stdout, stderr } = await asyncExec(command.join(" "));
+  const { stdout: findStdout } = await asyncExec(findCommand);
 
-  if (stderr) {
-    throw new Error(stderr);
+  const devicePaths = findStdout.split(EOL).filter((d) => d.length > 0);
+
+  const groups = new Map();
+
+  for (const devicePath of devicePaths) {
+    // Extract group number and PCI address from path like:
+    // /sys/kernel/iommu_groups/12/devices/0000:07:00.0
+    const match = devicePath.match(/\/iommu_groups\/(\d+)\/devices\/(.+)$/);
+    if (!match) continue;
+
+    const groupNum = parseInt(match[1], 10);
+    const pciAddress = match[2];
+
+    // Get device description from lspci
+    const { stdout: lspciOut } = await asyncExec(`lspci -nns ${pciAddress}`);
+    const description = lspciOut.trim();
+
+    if (!groups.has(groupNum)) {
+      groups.set(groupNum, []);
+    }
+
+    groups.get(groupNum).push({
+      pciAddress,
+      description,
+    });
   }
 
-  return stdout.split(EOL).filter((d) => d.length > 0);
+  return groups;
 };
 
 /**

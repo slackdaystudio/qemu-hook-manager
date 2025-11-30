@@ -20,7 +20,6 @@
     "sanitize-filename": "^1.6.3",
     "winston": "^3.17.0",
     "winston-console-format": "^1.0.8",
-    "winston-syslog": "^2.7.1",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
@@ -28,7 +27,7 @@
     "@babel/eslint-parser": "^7.26.5",
     "@babel/preset-react": "^7.26.3",
     "@types/yargs": "^17.0.33",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.27.0",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.3",
