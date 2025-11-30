@@ -9,6 +9,7 @@ For best results, ensure your virtualization CPU extensions are enabled in your 
 - Manage pre-defined hooks for QEMU VMs
 - Automate tasks such as automatic hardware binding
 - Easy configuration and setup
+- Devices displayed grouped by IOMMU group for easy identification of related hardware
 
 ## Requirements
 
@@ -130,6 +131,37 @@ reconnect|begin
 attach|begin
 
 Further reading at https://www.libvirt.org/hooks.html#etc-libvirt-hooks-qemu
+
+## Development
+
+### Running Tests
+
+The project uses [Vitest](https://vitest.dev/) for unit testing.
+
+```bash
+# Run tests once
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+### Building
+
+```bash
+npm run build
+```
+
+### Linting & Formatting
+
+```bash
+npm run lint
+npm run check-format
+npm run format
+```
 
 ## Contributing
 
